@@ -92,3 +92,7 @@ func (h *HTTPResponseHandler) errorResponse(
 	)
 
 }
+
+func (h *HTTPResponseHandler) NoContentResponse(){
+	h.rw.WriteHeader(http.StatusNoContent)
+}
