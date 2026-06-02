@@ -41,10 +41,10 @@ func NewUserUninitalized(
 	)
 }
 
-func (u *User) Validate() error{
+func (u *User) Validate() error {
 	fullNameLength := len([]rune(u.FullName))
 
-	if fullNameLength < 3 || fullNameLength > 100{
+	if fullNameLength < 3 || fullNameLength > 100 {
 		return fmt.Errorf(
 			"invalid FullName len: %d: %w",
 			fullNameLength,
@@ -52,10 +52,10 @@ func (u *User) Validate() error{
 		)
 	}
 
-	if u.PhoneNumber != nil{
+	if u.PhoneNumber != nil {
 		phoneNumberLen := len([]rune(*u.PhoneNumber))
-		
-		if phoneNumberLen < 10 || phoneNumberLen > 15{
+
+		if phoneNumberLen < 10 || phoneNumberLen > 15 {
 			return fmt.Errorf(
 				"invalied PhoneNumber len: %d: %w",
 				phoneNumberLen,
@@ -63,13 +63,50 @@ func (u *User) Validate() error{
 			)
 		}
 		re := regexp.MustCompile(`^\+[0-9]+$`)
-		if !re.MatchString(*u.PhoneNumber){
+		if !re.MatchString(*u.PhoneNumber) {
 			return fmt.Errorf(
 				"invalid PhoneNumber format: %w",
 				core_errors.ErrInvalidArgument,
 			)
 		}
 	}
-	
+
 	return nil
+}
+
+type UserPatch struct {
+	FullName    Nullabel[string]
+	PhoneNumber Nullabel[string]
+}
+
+func (p *UserPatch) Validate() error {
+	if p.FullName.Set && p.FullName.Value == nil {
+		return fmt.Errorf("FullName can't be patched to NULL: %w",
+			core_errors.ErrInvalidArgument,
+		)
+	}
+
+	return nil
+}
+
+func (u *User) ApplyPatch(patch UserPatch) error{
+	if err := patch.Validate(); err != nil{
+		return fmt.Errorf("validate user patch: %w", err)
+	}
+	tmp := *u
+
+	if patch.FullName.Set{
+		tmp.FullName = *patch.FullName.Value
+	}
+
+	if patch.PhoneNumber.Set{
+		tmp.PhoneNumber = patch.PhoneNumber.Value
+	}
+	if err := tmp.Validate(); err != nil{
+		return fmt.Errorf("validate patched user: %w", err)
+	}
+
+	*u = tmp 
+	return nil
+	
 }
